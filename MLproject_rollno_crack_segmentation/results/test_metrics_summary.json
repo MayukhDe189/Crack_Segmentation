@@ -1,0 +1,22 @@
+[
+  {
+    "Model": "Baseline U-Net (Ordinary BCE, w=1.0)",
+    "Pos Weight (w)": 1.0,
+    "Precision": 0.6797219874079109,
+    "Recall": 0.3784052287561913,
+    "F1 Score": 0.4861614480724991,
+    "IoU": 0.32114488573187866,
+    "Mean Sample F1": 0.46016376682593463,
+    "Mean Sample IoU": 0.3305866372741457
+  },
+  {
+    "Model": "Proposed U-Net (Weighted BCE, w=5.0)",
+    "Pos Weight (w)": 5.0,
+    "Precision": 0.48168096497296753,
+    "Recall": 0.7809150326756553,
+    "F1 Score": 0.5958388548826137,
+    "IoU": 0.4243379929525391,
+    "Mean Sample F1": 0.6006459307626577,
+    "Mean Sample IoU": 0.4374940118785297
+  }
+]

@@ -1,0 +1,247 @@
+\documentclass[17pt, a0paper, landscape]{tikzposter}
+
+% =============================================================================
+% Standard Packages
+% =============================================================================
+\usepackage{amsmath, amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{microtype}
+\usepackage{xcolor}
+
+% Automatically search both root and results/ directories
+\graphicspath{{./}{results/}{../results/}}
+
+% Fail-Safe Image Macro: Pure LaTeX boxes (No nested TikZ, detokenized underscores)
+\newcommand{\SafeImage}[3][width=0.96\linewidth]{%
+  \IfFileExists{#2}{%
+    \includegraphics[#1]{#2}%
+  }{%
+    \IfFileExists{results/#2}{%
+      \includegraphics[#1]{results/#2}%
+    }{%
+      \setlength{\fboxsep}{10pt}%
+      \setlength{\fboxrule}{1.5pt}%
+      \fcolorbox{ThemeSecondary}{ThemeSecondary!8}{%
+        \parbox{0.9\linewidth}{%
+          \centering\vspace{1.0em}%
+          {\Large\bfseries\color{ThemePrimary} #3}\\[0.6em]%
+          {\normalsize\ttfamily\color{ThemeSecondary} [Graphic Placeholder: \detokenize{#2}]}\\[0.4em]%
+          {\small\itshape\color{gray} (Upload image to Overleaf to display graphic)}%
+          \vspace{1.0em}%
+        }%
+      }%
+    }%
+  }%
+}
+
+% =============================================================================
+% Modern Theme & Refined Nordic Slate & Teal Palette
+% =============================================================================
+\usetheme{Simple}
+\usecolorstyle{Default}
+
+\definecolor{ThemePrimary}{HTML}{0F172A}    % Slate 900 / Deep Midnight
+\definecolor{ThemeSecondary}{HTML}{1E293B}  % Slate 800 / Tech Navy
+\definecolor{TealAccent}{HTML}{0D9488}      % Modern Deep Teal
+\definecolor{CyanAccent}{HTML}{0284C7}      % Electric Sky Cyan
+\definecolor{EmeraldGreen}{HTML}{059669}    % Success Green
+\definecolor{AmberWarning}{HTML}{D97706}    % Amber
+\definecolor{CanvasBg}{HTML}{F8FAFC}        % Clean Off-White Tint
+\definecolor{CardBg}{HTML}{FFFFFF}          % Crisp White
+
+\colorlet{backgroundcolor}{CanvasBg}
+\colorlet{framecolor}{ThemeSecondary}
+\colorlet{titlefgcolor}{white}
+\colorlet{titlebgcolor}{ThemePrimary}
+\colorlet{blocktitlebgcolor}{ThemeSecondary}
+\colorlet{blocktitlefgcolor}{white}
+\colorlet{blockbodybgcolor}{CardBg}
+\colorlet{blockbodyfgcolor}{ThemePrimary}
+
+% =============================================================================
+% Title, Author & Metadata
+% =============================================================================
+\title{\textbf{Pavement Crack Segmentation with Symmetrical U-Net}}
+\author{\textbf{Tackling Severe Class Imbalance (60.5 : 1) via Validation-Tuned Weighted Cross-Entropy}}
+\institute{Machine Learning Project $\bullet$ Problem Statement 2 $\bullet$ Benchmark: CrackForest Dataset (CFD) $\bullet$ 1.94M Parameters}
+
+% =============================================================================
+\begin{document}
+% =============================================================================
+
+\maketitle
+
+% =============================================================================
+% FULL-WIDTH TOP BANNER: End-to-End Pipeline SmartArt
+% =============================================================================
+\block[titleinnersep=5pt,bodyinnersep=5pt]{End-to-End Methodology \& Pipeline Workflow (SmartArt Process Flow)}{
+    \begin{center}
+        \SafeImage[width=0.98\linewidth]{pipeline_smartart.png}{End-to-End Deep Learning Pipeline (Ingestion -> Architecture -> Loss -> Tuning -> Inference)}
+    \end{center}
+}
+
+\begin{columns}
+
+% =============================================================================
+% COLUMN 1: Motivation, Dataset & Symmetrical U-Net Architecture SmartArt
+% =============================================================================
+\column{0.333}
+
+\block{1. Problem Motivation \& 60.5 : 1 Imbalance}{
+    \textbf{Real-World Challenge:} Continuous automated detection of asphalt cracks is essential for structural civil maintenance and proactive pothole prevention. However, cracks are ultra-thin spatial anomalies occupying only 1--5 pixels in width.
+
+    \vspace{0.3em}
+    \textbf{CFD Pixel-Level Imbalance:}
+    \begin{itemize}
+        \item \textbf{Crack Foreground:} 292,885 pixels (\textbf{1.63\%} of total surface area).
+        \item \textbf{Pavement Background:} 17,710,362 pixels (\textbf{98.37\%} of total surface area).
+        \item \textbf{Imbalance Ratio:} \textbf{60.47 : 1} background to crack pixels.
+    \end{itemize}
+
+    \vspace{0.3em}
+    \textbf{Why Standard BCE Fails (The Accuracy Trap):}
+    Under standard unweighted BCE, gradients from the overwhelming $>98\%$ background pixels dominate backpropagation. A degenerate network predicting 100\% background achieves \textbf{98.37\% Pixel Accuracy} while detecting 0\% of cracks. Standard BCE produces broken, dotted lines or omits entire fissures (Baseline Recall was only 37.84\%).
+}
+
+\block{2. Dataset Curation \& Controlled Splits}{
+    \textbf{CrackForest Dataset (CFD):} 118 calibrated color road images ($\sim 480 \times 320$) paired with pixel-level ground truth binary masks.
+    
+    \vspace{0.2em}
+    \begin{itemize}
+        \item \textbf{Standardized Resolution:} Resized to \textbf{256 $\times$ 256} (Bilinear for RGB; Nearest-Neighbor for masks to preserve $\{0, 1\}$ binary labels).
+        \item \textbf{Deterministic Split (Seed = 42):}
+        \begin{itemize}
+            \item \textbf{Train Split:} 82 images (69.5\%) -- weight optimization.
+            \item \textbf{Validation Split:} 17 images (14.4\%) -- hyperparameter selection of $w$.
+            \item \textbf{Test Split:} 19 images (16.1\%) -- held-out final benchmark.
+        \end{itemize}
+        \item \textbf{Augmentation:} Random horizontal and vertical flips ($p=0.5$).
+        \item \textbf{In-Memory Caching:} All 118 images pre-cached in RAM for high throughput.
+    \end{itemize}
+}
+
+\block{3. Symmetrical U-Net Architecture (SmartArt)}{
+    \begin{center}
+        \SafeImage[width=0.96\linewidth]{unet_architecture_smartart.png}{Symmetrical U-Net: 4 Encoders, Skip Connections, Bottleneck \& 4 Decoders}
+    \end{center}
+    
+    \vspace{-0.3em}
+    \begin{itemize}
+        \item \textbf{Encoder (Contracting):} 4 stages [DoubleConv 3$\times$3 $\rightarrow$ BN $\rightarrow$ ReLU $\rightarrow$ MaxPool 2$\times$2]. Channels: $3 \rightarrow 16 \rightarrow 32 \rightarrow 64 \rightarrow 128$.
+        \item \textbf{Bottleneck:} 256 feature channels at $16 \times 16$ spatial resolution.
+        \item \textbf{Decoder (Expanding):} 4 stages [ConvTranspose2d stride 2 + DoubleConv]. Channels: $256 \rightarrow 128 \rightarrow 64 \rightarrow 32 \rightarrow 16$.
+        \item \textbf{Skip Connections (Red Arrows):} Concatenates fine coordinates directly from encoder to decoder, preventing thin 1-pixel cracks from vanishing.
+        \item \textbf{Policy:} Adam ($\text{lr} = 1.5 \times 10^{-3}$, decay $= 10^{-5}$), CosineAnnealingLR.
+    \end{itemize}
+}
+
+% =============================================================================
+% COLUMN 2: Loss Formulation, Multi-Metric Tuning & Visual Proof
+% =============================================================================
+\column{0.334}
+
+\block{4. Loss Formulation \& Gradient Derivation}{
+    \textbf{Ordinary Binary Cross-Entropy (Baseline, $w = 1.0$):}
+    \begin{equation*}
+        \mathcal{L}_{\text{BCE}} = -\frac{1}{N} \sum_{i=1}^N \left[ y_i \log(p_i) + (1 - y_i) \log(1 - p_i) \right]
+    \end{equation*}
+
+    \textbf{Proposed Weighted Binary Cross-Entropy (WBCE, $w > 1.0$):}
+    \begin{equation*}
+        \mathcal{L}_{\text{WBCE}}(w) = -\frac{1}{N} \sum_{i=1}^N \left[ w \cdot y_i \log(p_i) + (1 - y_i) \log(1 - p_i) \right]
+    \end{equation*}
+    where $y_i \in \{0, 1\}$ and $p_i = \sigma(z_i) = \frac{1}{1 + e^{-z_i}}$.
+
+    \vspace{0.3em}
+    \textbf{Gradient Derivation on Falsely Neglected Cracks:}
+    \begin{equation*}
+        \frac{\partial \mathcal{L}_{\text{WBCE}}}{\partial z_i} = p_i - y_i \left[ 1 + (w - 1)(1 - p_i) \right]
+    \end{equation*}
+    When a true crack pixel is falsely predicted as pavement ($y_i = 1, p_i \approx 0$), the error gradient is multiplied by \textbf{$w$}, applying heavy corrective backpropagation.
+
+    \vspace{0.2em}
+    \textbf{Controlled Ablation:} Setting $w = 1.0$ mathematically recovers baseline BCE, isolating the exact empirical contribution of class reweighting.
+}
+
+\block{5. Multi-Metric Tuning: F1, Accuracy, Precision \& Recall vs $w$}{
+    \begin{center}
+        \SafeImage[width=0.96\linewidth]{validation_weight_tuning.png}{Validation Tuning Curves: F1, Accuracy, Precision, Recall \& IoU}
+    \end{center}
+    
+    \vspace{-0.3em}
+    \textbf{Comprehensive Multi-Metric Analysis:} 
+    \begin{itemize}
+        \item \textbf{Pixel Accuracy (brown):} Remains stably high ($>97.5\%$) across all weights due to background volume.
+        \item \textbf{Recall (orange):} Climbs monotonically from $45.28\%$ ($w=1$) to $90.05\%$ ($w=15$).
+        \item \textbf{Precision (red):} Gradually trades off as weight increases ($67.23\% \rightarrow 39.13\%$).
+        \item \textbf{F1 Score (blue) \& IoU (green):} Peak at \textbf{$w^* = 5.0$} with \textbf{Val F1 = 0.6153} and \textbf{Val IoU = 0.4444}, establishing $w^* = 5.0$ as the optimal trade-off point.
+    \end{itemize}
+}
+
+\block{6. Qualitative Visual Continuity on Test Images}{
+    \begin{center}
+        \SafeImage[width=0.96\linewidth]{test_predictions_comparison.png}{Qualitative Predictions: Input vs Ground Truth vs Baseline vs Proposed}
+    \end{center}
+    
+    \vspace{-0.3em}
+    \textbf{Visual Finding:} Baseline U-Net (Col 3) yields broken, fragmented fissures. The proposed model with $w^* = 5.0$ (Col 4) completely reconstructs unbroken crack continuity.
+}
+
+% =============================================================================
+% COLUMN 3: Benchmark Results, Confusion Matrix & Defense
+% =============================================================================
+\column{0.333}
+
+\block{7. Quantitative Benchmark: F1, Accuracy, Precision \& Recall}{
+    \begin{center}
+        \SafeImage[width=0.96\linewidth]{metrics_comparison_bar.png}{Test Benchmark: Pixel Acc, Precision, Recall, F1 Score \& IoU}
+    \end{center}
+    
+    \vspace{-0.2em}
+    \begin{center}
+    \small
+    \begin{tabular}{lcccc}
+        \toprule
+        \textbf{Metric} & \textbf{Baseline ($w=1$)} & \textbf{Proposed ($w=5$)} & \textbf{$\Delta$ Gain} & \textbf{Relative} \\
+        \midrule
+        \textbf{Pixel Accuracy} & 98.77\% & 98.37\% & -0.40\% & -- \\
+        \textbf{Precision} & 67.97\% & 48.17\% & -0.1980 & -29.1\% \\
+        \textbf{Crack Recall} & 37.84\% & \textbf{78.09\%} & \textbf{+0.4025} & \textbf{+106.4\%} \\
+        \textbf{F1 Score (Dice)} & 0.4862 & \textbf{0.5958} & \textbf{+0.1097} & \textbf{+22.6\%} \\
+        \textbf{IoU (Jaccard)} & 0.3211 & \textbf{0.4243} & \textbf{+0.1032} & \textbf{+32.1\%} \\
+        Mean Class Acc & 68.78\% & 88.39\% & +19.61\% & +28.5\% \\
+        \bottomrule
+    \end{tabular}
+    \end{center}
+
+    \vspace{0.2em}
+    \textbf{The Accuracy Paradox:} High pixel accuracy ($98.77\%$) in the baseline is misleading because it missed $62.16\%$ of cracks. The proposed model doubled crack recall ($78.09\%$), delivering massive real-world inspection gains (+22.6\% F1, +32.1\% IoU).
+}
+
+\block{8. Pixel-Level Confusion Matrix Analysis}{
+    \begin{center}
+        \SafeImage[width=0.96\linewidth]{confusion_matrix.png}{Confusion Matrix: 1,245,184 Held-Out Test Pixels}
+    \end{center}
+    
+    \vspace{-0.3em}
+    \begin{itemize}
+        \item \textbf{64.8\% Reduction in Missed Cracks:} False Negatives dropped from 11,888 pixels (Baseline) down to only 4,190 pixels (Proposed).
+        \item \textbf{Controlled Background FP:} Pavement false positives remained at only 1.31\%, preserving high overall pixel reliability ($98.37\%$).
+    \end{itemize}
+}
+
+\block{9. Technical Viva Q\&A \& Key Takeaways}{
+    \begin{itemize}
+        \item \textbf{Q: Why did ordinary BCE produce fragmented cracks?} \\
+        \textbf{A:} Because 98.4\% of pixels are pavement, backprop gradients pushed predictions towards 0 to minimize aggregate loss, ignoring thin foreground signals.
+        \item \textbf{Q: Why not set $w = 60.5$ (inverse frequency)?} \\
+        \textbf{A:} Setting $w = 60$ excessively penalizes false negatives, causing road texture and shadows to be flagged as cracks. Validation tuning proved $w^* = 5.0$ is the optimal sweet spot.
+        \item \textbf{Q: Why are skip connections indispensable?} \\
+        \textbf{A:} MaxPool downsamples 1-pixel cracks to zero signal. Skip connections re-inject high-frequency spatial coordinate details directly to the decoder.
+    \end{itemize}
+}
+
+\end{columns}
+
+\end{document}

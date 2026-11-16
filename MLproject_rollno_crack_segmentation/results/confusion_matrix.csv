@@ -1,0 +1,5 @@
+Model,True_Class,Pred_Crack,Pred_Pavement
+Proposed (w=5.0),Crack (Positive),14935,4190
+Proposed (w=5.0),Pavement (Negative),16071,1209988
+Baseline (w=1.0),Crack (Positive),7237,11888
+Baseline (w=1.0),Pavement (Negative),3410,1222649

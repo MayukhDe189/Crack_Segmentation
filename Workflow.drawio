@@ -1,0 +1,122 @@
+<mxfile host="app.diagrams.net" modified="2026-11-17T09:00:00.000Z" agent="ChatGPT" version="24.7.17" type="device">
+  <diagram id="crack-workflow" name="Overall Project Workflow">
+    <mxGraphModel dx="1600" dy="1300" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1300" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="CRACK SEGMENTATION — OVERALL PROJECT WORKFLOW" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#17365D;strokeColor=#17365D;fontColor=#FFFFFF;fontSize=24;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="280" y="20" width="1040" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="CrackForest Dataset (CFD) • Symmetrical U-Net • Validation-tuned Weighted Binary Cross-Entropy" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#44546A;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="280" y="78" width="1040" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="dataset" value="&lt;b&gt;1. DATASET INPUT&lt;/b&gt;&lt;br&gt;CrackForest Dataset (CFD)&lt;br&gt;118 RGB road images + MATLAB ground-truth masks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAF2F8;strokeColor=#5B9BD5;fontColor=#17365D;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="570" y="130" width="460" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="prep" value="&lt;b&gt;2. PREPROCESSING&lt;/b&gt;&lt;br&gt;Resize images to 256×256 (bilinear)&lt;br&gt;Resize masks (nearest-neighbor); extract crack=1 / background=0&lt;br&gt;ImageNet normalization; train-time H/V flips (p=0.5)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#7F93A8;fontColor=#243447;fontSize=13;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="470" y="245" width="660" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="eda" value="&lt;b&gt;3. EXPLORATORY DATA ANALYSIS&lt;/b&gt;&lt;br&gt;Inspect crack coverage and sample overlays&lt;br&gt;Class distribution: 98.37% background / 1.63% crack&lt;br&gt;Background-to-crack ratio ≈ 60.47 : 1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#7F93A8;fontColor=#243447;fontSize=13;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="500" y="390" width="600" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="split" value="&lt;b&gt;4. DETERMINISTIC DATA SPLIT&lt;/b&gt;&lt;br&gt;Seed = 42 • 70/15/15 protocol&lt;br&gt;Train: 82 images  |  Validation: 17 images  |  Held-out test: 19 images" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAF2F8;strokeColor=#5B9BD5;fontColor=#17365D;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="500" y="515" width="600" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="train_group" value="TRAINING / MODEL OPTIMIZATION" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#C7D3DF;dashed=1;dashPattern=8 4;fontColor=#526579;fontSize=14;fontStyle=1;align=left;verticalAlign=top;spacingTop=8;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="60" y="635" width="650" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="val_group" value="VALIDATION / HYPERPARAMETER SELECTION" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#C7D3DF;dashed=1;dashPattern=8 4;fontColor=#526579;fontSize=14;fontStyle=1;align=left;verticalAlign=top;spacingTop=8;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="890" y="635" width="650" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="train" value="&lt;b&gt;5A. TRAIN U-NET&lt;/b&gt;&lt;br&gt;Symmetrical fully convolutional U-Net&lt;br&gt;4 encoder stages + bottleneck + 4 decoder stages&lt;br&gt;Horizontal skip connections • ≈1.94M parameters" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E2F0D9;strokeColor=#70AD47;fontColor=#274E13;fontSize=13;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="95" y="690" width="280" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="loss" value="&lt;b&gt;WEIGHTED BCE OBJECTIVE&lt;/b&gt;&lt;br&gt;WBCE with candidate positive weight w&lt;br&gt;w ∈ {1.0, 5.0, 10.0, 15.0}&lt;br&gt;Adam • lr=1.5×10⁻³ • batch=8 • 20 epochs&lt;br&gt;Cosine Annealing schedule" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E2F0D9;strokeColor=#70AD47;fontColor=#274E13;fontSize=13;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="405" y="690" width="270" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="val_eval" value="&lt;b&gt;5B. VALIDATE EACH MODEL&lt;/b&gt;&lt;br&gt;Evaluate on 17 validation images&lt;br&gt;Validation loss, Precision, Recall,&lt;br&gt;F1 score and IoU" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontColor=#7F6000;fontSize=13;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="925" y="690" width="250" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="select" value="&lt;b&gt;SELECT w*&lt;/b&gt;&lt;br&gt;Choose candidate with maximum&lt;br&gt;validation F1 (and inspect IoU)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontColor=#7F6000;fontSize=13;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="690" width="260" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="decision" value="Best&lt;br&gt;weight&lt;br&gt;selected?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontColor=#7F6000;fontSize=13;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="1210" y="835" width="150" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="locked" value="&lt;b&gt;LOCK OPTIMAL MODEL&lt;/b&gt;&lt;br&gt;w* = 5.0&lt;br&gt;Peak validation F1 = 0.6153&lt;br&gt;Peak validation IoU = 0.4444" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DDEBF7;strokeColor=#4472C4;fontColor=#1F3864;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="925" y="835" width="250" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="test_group" value="FINAL TESTING &amp; REPORTING" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#C7D3DF;dashed=1;dashPattern=8 4;fontColor=#526579;fontSize=14;fontStyle=1;align=left;verticalAlign=top;spacingTop=8;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="180" y="965" width="1240" height="250" as="geometry" />
+        </mxCell>
+        <mxCell id="test" value="&lt;b&gt;6. HELD-OUT TEST EVALUATION&lt;/b&gt;&lt;br&gt;Freeze w* = 5.0 before test&lt;br&gt;Evaluate proposed model and w=1.0 baseline&lt;br&gt;Use quarantined 19-image test split; threshold τ=0.5" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE4D6;strokeColor=#ED7D31;fontColor=#843C0C;fontSize=13;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="230" y="1020" width="330" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="metrics" value="&lt;b&gt;7. QUANTITATIVE + QUALITATIVE ANALYSIS&lt;/b&gt;&lt;br&gt;Precision • Recall • F1 • IoU&lt;br&gt;Pixel confusion matrix; ROC / PR curves&lt;br&gt;Compare masks, overlays and crack continuity&lt;br&gt;Controlled ablation: WBCE w=5 vs BCE w=1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#7F93A8;fontColor=#243447;fontSize=13;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="620" y="1020" width="360" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="results" value="&lt;b&gt;8. PROJECT OUTPUTS&lt;/b&gt;&lt;br&gt;Trained U-Net model (θ*)&lt;br&gt;Predicted crack masks + overlays&lt;br&gt;Performance report and comparison&lt;br&gt;Inference: ≈23 ms/frame (~43 FPS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DDEBF7;strokeColor=#4472C4;fontColor=#1F3864;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="1020" width="330" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#526579;strokeWidth=2;fontSize=12;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="dataset" target="prep">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#526579;strokeWidth=2;fontSize=12;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="prep" target="eda">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#526579;strokeWidth=2;fontSize=12;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="eda" target="split">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#526579;strokeWidth=2;fontSize=12;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="split" target="train">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#526579;strokeWidth=2;fontSize=12;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="train" target="loss">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="trained candidate models" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#526579;strokeWidth=2;fontSize=12;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="loss" target="val_eval">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#526579;strokeWidth=2;fontSize=12;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="val_eval" target="select">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#526579;strokeWidth=2;fontSize=12;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="select" target="decision">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="Yes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#526579;strokeWidth=2;fontSize=12;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="decision" target="locked">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="freeze w*=5.0" style="edgeStyle=orthogonalEdgeStyle;rounded=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#4472C4;strokeWidth=2;fontSize=12;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="locked" target="test">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#526579;strokeWidth=2;fontSize=12;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="test" target="metrics">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#526579;strokeWidth=2;fontSize=12;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="metrics" target="results">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" value="No — continue grid search" style="edgeStyle=orthogonalEdgeStyle;rounded=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#C59B2A;strokeWidth=2;dashed=1;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="decision" target="val_eval">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1385" y="875" />
+              <mxPoint x="1490" y="875" />
+              <mxPoint x="1490" y="650" />
+              <mxPoint x="1050" y="650" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="note1" value="&lt;b&gt;Why WBCE?&lt;/b&gt;&lt;br&gt;Crack pixels are rare. Positive weighting amplifies the penalty for missed cracks and reduces background-gradient dominance." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F2F2F2;strokeColor=#A6A6A6;fontColor=#404040;fontSize=11;align=left;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="70" y="245" width="330" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="note2" value="&lt;b&gt;Leakage control&lt;/b&gt;&lt;br&gt;Use validation data only to select w*. Keep the 19-image test split untouched until final evaluation." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F2F2F2;strokeColor=#A6A6A6;fontColor=#404040;fontSize=11;align=left;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1195" y="245" width="330" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="note3" value="&lt;b&gt;Reported test improvement&lt;/b&gt;&lt;br&gt;Recall: 0.3784 → 0.7809 (+106.4%)&lt;br&gt;F1: 0.4862 → 0.5958 (+22.6%)&lt;br&gt;IoU: 0.3211 → 0.4243 (+32.1%)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F2F2F2;strokeColor=#A6A6A6;fontColor=#404040;fontSize=11;align=left;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="70" y="390" width="330" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="note4" value="&lt;b&gt;Scope&lt;/b&gt;&lt;br&gt;Binary semantic segmentation of 2D RGB pavement images: crack foreground vs. asphalt background." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F2F2F2;strokeColor=#A6A6A6;fontColor=#404040;fontSize=11;align=left;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1195" y="390" width="330" height="92" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
